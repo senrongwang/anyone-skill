@@ -86,29 +86,111 @@ def parse_wechatmsg_txt(file_path: str, target_name: str) -> dict:
 
 
 def parse_liuhen_json(file_path: str, target_name: str) -> dict:
-    """解析留痕导出的 JSON 格式"""
+    """解析留痕/WeFlow 导出的 JSON 格式
+    
+    支持格式：
+    - 留痕导出: [{"time": ..., "sender": ..., "content": ...}]
+    - WeFlow导出: {"session": {...}, "messages": [{"createTime": ..., "senderDisplayName": ..., "content": ...}]}
+    """
     with open(file_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
     messages = []
-    # 留痕格式可能有多种结构，尝试常见的
-    msg_list = data if isinstance(data, list) else data.get('messages', data.get('data', []))
     
-    for msg in msg_list:
-        messages.append({
-            'timestamp': msg.get('time', msg.get('timestamp', '')),
-            'sender': msg.get('sender', msg.get('nickname', msg.get('from', ''))),
-            'content': msg.get('content', msg.get('message', msg.get('text', '')))
-        })
+    # WeFlow 格式: data.messages 数组
+    if 'messages' in data and isinstance(data['messages'], list):
+        msg_list = data['messages']
+        for msg in msg_list:
+            # WeFlow 格式字段
+            sender = msg.get('senderDisplayName', msg.get('senderNickname', msg.get('senderUsername', '')))
+            content = msg.get('content', '')
+            timestamp = msg.get('formattedTime', str(msg.get('createTime', '')))
+            
+            # 过滤系统消息
+            if msg.get('type') in ['系统消息', '撤回消息'] or not content:
+                continue
+                
+            messages.append({
+                'timestamp': timestamp,
+                'sender': sender,
+                'content': content
+            })
+    
+    # 留痕格式: 直接是数组或 data.data
+    elif isinstance(data, list):
+        for msg in data:
+            messages.append({
+                'timestamp': msg.get('time', msg.get('timestamp', '')),
+                'sender': msg.get('sender', msg.get('nickname', msg.get('from', ''))),
+                'content': msg.get('content', msg.get('message', msg.get('text', '')))
+            })
+    
+    # 其他格式尝试通用提取
+    else:
+        msg_list = data.get('data', [])
+        for msg in msg_list:
+            messages.append({
+                'timestamp': msg.get('time', msg.get('timestamp', '')),
+                'sender': msg.get('sender', msg.get('nickname', msg.get('from', ''))),
+                'content': msg.get('content', msg.get('message', msg.get('text', '')))
+            })
     
     return analyze_messages(messages, target_name)
 
 
 def parse_plaintext(file_path: str, target_name: str) -> dict:
-    """解析纯文本粘贴的聊天记录"""
+    """解析纯文本粘贴的聊天记录
+    
+    支持格式：
+    名字1：消息内容
+    名字2：消息内容
+    
+    或：
+    2024-01-15 20:30:45 名字1
+    消息内容
+    """
     with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
         content = f.read()
     
+    messages = []
+    lines = content.split('\n')
+    
+    # 尝试检测格式
+    # 格式1: "名字：消息" (你的格式)
+    # 格式2: 时间戳 + 换行 + 消息 (WeChatMsg格式)
+    
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if not line:
+            i += 1
+            continue
+        
+        # 尝试匹配 "名字：消息" 格式
+        if '：' in line or ':' in line:
+            # 尝试中文冒号
+            if '：' in line:
+                sender, msg_content = line.split('：', 1)
+            else:
+                sender, msg_content = line.split(':', 1)
+            
+            sender = sender.strip()
+            msg_content = msg_content.strip()
+            
+            if sender and msg_content:
+                messages.append({
+                    'timestamp': '',
+                    'sender': sender,
+                    'content': msg_content
+                })
+        
+        i += 1
+    
+    # 如果解析到消息，使用 analyze_messages 分析
+    if messages:
+        return analyze_messages(messages, target_name)
+    
+    # 否则返回原始内容
     return {
         'raw_text': content,
         'target_name': target_name,
@@ -121,7 +203,16 @@ def parse_plaintext(file_path: str, target_name: str) -> dict:
 
 
 def analyze_messages(messages: list, target_name: str) -> dict:
-    """分析消息列表，提取关键特征"""
+    """分析消息列表，提取关键特征
+    
+    提取维度：
+    1. 基础统计：消息数、长度、频率
+    2. 语言风格：语气词、emoji、标点习惯
+    3. 话题分析：高频词汇、兴趣点
+    4. 行为模式：回复速度、主动/被动比例
+    5. 情感表达：情绪词、关心语句
+    6. 关系线索：共同活动、提及的地点/时间
+    """
     target_msgs = [m for m in messages if target_name in m.get('sender', '')]
     user_msgs = [m for m in messages if target_name not in m.get('sender', '')]
     
@@ -161,6 +252,56 @@ def analyze_messages(messages: list, target_name: str) -> dict:
         '波浪号': all_target_text.count('～') + all_target_text.count('~'),
     }
     
+    # 提取高频实词（话题分析）
+    # 过滤常见停用词后统计
+    stop_words = {'的', '了', '是', '我', '你', '在', '有', '就', '不', '人', '都', '一', '一个', '上', '也', '很', '到', '说', '要', '去', '可以', '会', '着', '没有', '看', '好', '自己', '这'}
+    words = re.findall(r'[\u4e00-\u9fa5]{2,4}', all_target_text)  # 2-4字中文词
+    word_freq = {}
+    for w in words:
+        if w not in stop_words and len(w) >= 2:
+            word_freq[w] = word_freq.get(w, 0) + 1
+    top_words = sorted(word_freq.items(), key=lambda x: -x[1])[:15]
+    
+    # 提取可能的地点（包含"路、街、店、商场、公园"等）
+    location_pattern = re.compile(r'([\u4e00-\u9fa5]{2,6}(?:路|街|大道|店|商场|广场|公园|餐厅|饭店|酒店|小区|楼|大厦))')
+    locations = location_pattern.findall(all_target_text)
+    location_freq = {}
+    for loc in locations:
+        location_freq[loc] = location_freq.get(loc, 0) + 1
+    top_locations = sorted(location_freq.items(), key=lambda x: -x[1])[:10]
+    
+    # 提取时间相关词汇
+    time_pattern = re.compile(r'(\d{1,2}[:：]\d{2}|\d{1,2}点|早上|中午|晚上|周末|星期[一二三四五六日]|下周|明天|昨天)')
+    time_refs = time_pattern.findall(all_target_text)
+    
+    # 提取活动/兴趣点
+    activity_keywords = ['吃', '喝', '玩', '看', '去', '买', '逛', '电影', '游戏', '音乐', '旅游', '运动', '健身', '跑步', '火锅', '烧烤', '奶茶']
+    activities = []
+    for keyword in activity_keywords:
+        if keyword in all_target_text:
+            # 找到包含关键词的上下文
+            for msg in target_msgs[:30]:
+                if keyword in msg.get('content', ''):
+                    activities.append(msg['content'])
+                    break
+    
+    # 提取关心/情感表达语句
+    care_patterns = ['注意', '小心', '早点睡', '别太累', '照顾好', '记得', '担心', '想你了', '爱你', '抱抱']
+    care_messages = []
+    for msg in target_msgs:
+        content = msg.get('content', '')
+        for pattern in care_patterns:
+            if pattern in content and len(content) < 50:
+                care_messages.append(content)
+                break
+    
+    # 识别回应模式（秒回 vs 延迟）
+    response_patterns = {
+        '秒回型': len([m for m in target_msgs if len(m.get('content', '')) < 10]) > len(target_msgs) * 0.6,
+        '话痨型': avg_length > 30,
+        '简洁型': avg_length < 15,
+    }
+    
     return {
         'target_name': target_name,
         'total_messages': len(messages),
@@ -169,9 +310,15 @@ def analyze_messages(messages: list, target_name: str) -> dict:
         'analysis': {
             'top_particles': top_particles,
             'top_emojis': top_emojis,
+            'top_words': top_words,  # 高频话题词
             'avg_message_length': round(avg_length, 1),
             'punctuation_habits': punctuation_counts,
             'message_style': 'short_burst' if avg_length < 20 else 'long_form',
+            'response_pattern': [k for k, v in response_patterns.items() if v],
+            'locations': top_locations,  # 常提地点
+            'time_references': list(set(time_refs))[:10],  # 时间偏好
+            'activities': activities[:10],  # 活动/兴趣
+            'care_messages': care_messages[:10],  # 关心语句
         },
         'sample_messages': [m['content'] for m in target_msgs[:50] if m.get('content')],
     }

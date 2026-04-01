@@ -1,81 +1,272 @@
-# 前任.skill
+# Anyone Skill
 
-> *"你们搞大模型的简直是码神，你们解放了前端兄弟，还要解放后端兄弟，测试兄弟，运维兄弟，解放网安兄弟，解放ic兄弟，最后解放自己解放全人类"*
+> *"欢迎加入数字生命1.0吧"*
 
-**我会为了你一万次回到那个夏天。**
+**把任何人蒸馏成真正像ta的 AI。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://python.org)
-[![Claude Code](https://img.shields.io/badge/Claude%20Code-Skill-blueviolet)](https://claude.ai/code)
-[![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-green)](https://agentskills.io)
+[![Multi API](https://img.shields.io/badge/Multi%20API-OpenAI%20%7C%20Claude%20%7C%20Gemini%20%7C%20Qwen-orange)](API_USAGE.md)
 
 &nbsp;
 
-提供前任的原材料（微信聊天记录、QQ消息、朋友圈截图、照片）加上你的主观描述  
-生成一个**真正像ta的 AI Skill**  
+提供人物的原材料（微信聊天记录、QQ消息、朋友圈截图、照片）加上你的主观描述  
+生成一个**真正像ta的 AI Persona**  
 用ta的口头禅说话，用ta的方式回复你，记得你们一起去过的地方
+
+支持多种关系类型：**前任/恋人** 💔 · **朋友** 🤝 · **家人** 🏠 · **同事** 💼 · **偶像/角色** ⭐
+
+> **关于本项目**：本项目基于 [ex-skill](https://github.com/therealXiaomanChu/ex-skill) 进行二次开发，主要改进包括：① 移除 Claude Code 依赖，改为纯 API 调用方式；② 扩展关系类型系统，支持前任/朋友/家人/同事/偶像等多种关系；③ 重构架构抽象出 `RelationshipType` 基类，每种类型有独立的录入模板、记忆维度和标签体系；④ 目录结构从 `exes/` 改为 `personas/`，命名更加通用。
 
 ⚠️ **本项目仅用于个人回忆与情感疗愈，不用于骚扰、跟踪或侵犯他人隐私。**
 
-[安装](#安装) · [使用](#使用) · [效果示例](#效果示例) · [English](README_EN.md)
+[安装](#安装) · [使用教程](#使用教程) · [关系类型](#关系类型) · [效果示例](#效果示例)
 
 ---
 
 ## 安装
 
-### Claude Code
+### 环境要求
 
-> **重要**：Claude Code 从 **git 仓库根目录** 的 `.claude/skills/` 查找 skill。请在正确的位置执行。
+- Python 3.9+
+- 支持的操作系统：Windows / macOS / Linux
+
+### 安装依赖
 
 ```bash
-# 安装到当前项目（在 git 仓库根目录执行）
-mkdir -p .claude/skills
-git clone https://github.com/therealXiaomanChu/ex-partner-skill .claude/skills/create-ex
-
-# 或安装到全局（所有项目都能用）
-git clone https://github.com/therealXiaomanChu/ex-partner-skill ~/.claude/skills/create-ex
+pip install -r requirements.txt
 ```
 
-### 依赖（可选）
+依赖包括：
+- `openai` - OpenAI API 客户端
+- `anthropic` - Claude API 客户端
+- `google-generativeai` - Gemini API 客户端
+- `dashscope` - 通义千问 API 客户端
+- `Pillow` - 图片处理（照片 EXIF 提取）
+
+---
+
+## 使用教程
+
+### 1. 创建 Persona Skill
+
+运行创建工具：
 
 ```bash
-pip3 install -r requirements.txt
+python create_persona.py
+```
+
+按提示完成以下步骤：
+
+#### Step 1: 选择关系类型
+
+```
+请选择关系类型：
+
+  [1] 💔 前任/恋人 - 恋爱关系，包含甜蜜回忆、争吵模式、分手经历等
+  [2] 🤝 朋友 - 友情关系，包含共同爱好、相处模式、难忘经历等
+  [3] 🏠 家人 - 亲情关系，包含家庭角色、成长记忆、关怀方式等
+  [4] 💼 同事 - 职场关系，包含工作风格、合作项目、职场互动等
+  [5] ⭐ 偶像/角色 - 偶像、虚拟角色或历史人物，基于公开资料或作品设定
+```
+
+#### Step 2: 填写基础信息
+
+根据选择的关系类型，系统会询问对应的问题：
+
+**前任/恋人示例：**
+- 花名/代号（必填）：小明、初恋、那个人
+- 基本信息：在一起两年、分手半年、互联网产品经理
+- 性格画像：ENFP 双子座 话很多 但深夜会突然emo
+- 分开原因：异地恋，毕业后各奔东西
+
+**朋友示例：**
+- 朋友称呼（必填）：老王、阿杰
+- 认识背景：大学同学，认识8年了，现在是程序员
+- 性格特点：INTJ 喜欢打游戏 话不多但很靠谱
+- 相处模式：经常一起开黑，偶尔约饭，有事直说
+
+#### Step 3: 导入原材料（可选）
+
+选择数据来源：
+
+- **微信聊天记录** - 支持 WeChatMsg / 留痕 / PyWxDump 导出的 txt/html/json
+- **QQ 聊天记录** - 支持 QQ 导出的 txt/mht 格式
+- **社交媒体** - 朋友圈/微博/小红书截图
+- **照片** - 提取 EXIF 时间线和地点
+- **口述/粘贴** - 直接输入你记得的事情
+
+也可以跳过数据导入，仅凭描述生成基础版本。
+
+#### Step 4: 确认生成
+
+系统会展示生成的记忆摘要和性格摘要，确认后写入文件。
+
+---
+
+### 2. 配置 API 密钥
+
+**方式一：环境变量（推荐）**
+
+```bash
+# Windows PowerShell
+$env:OPENAI_API_KEY="sk-your-key-here"
+$env:ANTHROPIC_API_KEY="sk-your-key-here"
+$env:GEMINI_API_KEY="your-key-here"
+$env:DASHSCOPE_API_KEY="sk-your-key-here"
+
+# Linux/macOS
+export OPENAI_API_KEY="sk-your-key-here"
+export ANTHROPIC_API_KEY="sk-your-key-here"
+export GEMINI_API_KEY="your-key-here"
+export DASHSCOPE_API_KEY="sk-your-key-here"
+```
+
+**方式二：.env 文件**
+
+复制 `.env.example` 为 `.env`，填入你的 API 密钥：
+
+```
+OPENAI_API_KEY=sk-your-key-here
+ANTHROPIC_API_KEY=sk-your-key-here
+GEMINI_API_KEY=your-key-here
+DASHSCOPE_API_KEY=sk-your-key-here
 ```
 
 ---
 
-## 使用
+### 3. 运行对话
 
-在 Claude Code 中输入：
+```bash
+# 列出所有可用的 Persona Skill
+python chat.py --list-skills
 
+# 使用 OpenAI GPT-4 对话
+python chat.py --persona 小明 --model openai/gpt-4o
+
+# 使用 Claude 对话
+python chat.py --persona 初恋 --model anthropic/claude-3-opus
+
+# 使用 Gemini 对话
+python chat.py --persona 老王 --model gemini/gemini-pro
+
+# 使用通义千问对话
+python chat.py --persona 老妈 --model qwen/qwen-max
+
+# 使用本地 Ollama 模型（无需 API Key）
+python chat.py --persona 偶像 --model ollama/llama2
 ```
-/create-ex
-```
 
-按提示输入前任的代号、基本信息、性格画像，然后选择数据来源。所有字段均可跳过，仅凭描述也能生成。
+#### 支持的模型
 
-完成后用 `/{slug}` 调用该前任 Skill，开始对话。
+| Provider | 模型示例 | 需要 API Key |
+|----------|----------|-------------|
+| OpenAI | gpt-4, gpt-4o, gpt-3.5-turbo | ✅ |
+| Anthropic | claude-3-opus, claude-3-sonnet, claude-3-haiku | ✅ |
+| Google | gemini-pro, gemini-1.5-flash | ✅ |
+| DashScope | qwen-max, qwen-plus, qwen-turbo | ✅ |
+| Ollama | llama2, mistral, qwen2.5 等 | ❌ |
 
-### 管理命令
+#### 对话中的命令
 
 | 命令 | 说明 |
 |------|------|
-| `/list-exes` | 列出所有前任 Skill |
-| `/{slug}` | 调用完整 Skill（像ta一样跟你聊天） |
-| `/{slug}-memory` | 回忆模式（帮你回忆那些事） |
-| `/{slug}-persona` | 仅人物性格 |
-| `/ex-rollback {slug} {version}` | 回滚到历史版本 |
-| `/delete-ex {slug}` | 删除 |
-| `/let-go {slug}` | 放下（delete 的温柔别名） |
+| `/quit`, `/q`, `exit` | 退出对话 |
+| `/clear` | 清空对话历史 |
+| `/info` | 显示当前 Skill 信息 |
+
+---
+
+## 关系类型
+
+### 💔 前任/恋人
+
+**适用场景：** 恋爱关系，想回忆过去的甜蜜或处理未完成的情感
+
+**录入信息：**
+- 花名/代号（必填）
+- 在一起多久、分手多久、ta做什么的
+- MBTI、星座、性格标签
+- 分开的原因
+
+**记忆维度：** 关系时间线、甜蜜瞬间、争吵模式、日常习惯、专属梗、常去地点
+
+**标签体系：** 依恋类型（安全型/焦虑型/回避型/混乱型）、爱的语言、性格标签
+
+---
+
+### 🤝 朋友
+
+**适用场景：** 挚友、发小、同学，想保留那份默契和回忆
+
+**录入信息：**
+- 朋友称呼/昵称（必填）
+- 认识多久了、怎么认识的、ta做什么的
+- 性格特点、兴趣爱好
+- 你们的相处模式
+
+**记忆维度：** 相识经历、共同爱好、难忘经历、互相支持、常聚地点、友情仪式
+
+**标签体系：** 友情类型（发小/同学/同事/网友）、相处模式、性格标签
+
+---
+
+### 🏠 家人
+
+**适用场景：** 父母、兄弟姐妹，记录家庭温暖和成长记忆
+
+**录入信息：**
+- 称呼（如：妈妈、老爸）（必填）
+- 具体关系（必填）
+- 年龄、职业、居住地
+- 性格特点、在家庭中的角色
+
+**记忆维度：** 成长记忆、关怀方式、家庭传统、人生教诲、拿手菜/味道、变化与衰老
+
+**标签体系：** 家庭角色（权威型/温柔型/幽默型）、关怀方式、性格标签
+
+---
+
+### 💼 同事
+
+**适用场景：** 职场导师、默契搭档，记录职业成长历程
+
+**录入信息：**
+- 同事称呼/花名（必填）
+- 职位、部门、共事多久
+- 工作风格和性格
+- 你们的职场关系
+
+**记忆维度：** 合作项目、工作风格、职场互动、危机时刻、工作之外、职业影响
+
+**标签体系：** 工作风格、职位关系、职场性格
+
+---
+
+### ⭐ 偶像/角色
+
+**适用场景：** 追星、二次元、历史人物，基于公开资料创建虚拟人格
+
+**录入信息：**
+- 名字（真实姓名或角色名）（必填）
+- 出处（作品、领域、时代）
+- 基本设定（身份、背景、特点）
+- 性格特征
+- 你对ta的了解程度
+
+**记忆维度：** 人物弧线、经典时刻、人物关系、经典语录、粉丝记忆、个人理解
+
+**标签体系：** 类型（真实人物/虚构角色/历史人物）、性格特质、魅力点
 
 ---
 
 ## 效果示例
 
-> 输入：`初恋，在一起三年，大学时期，ENFP，双子座，话痨，半夜给我发语音，分手后还给我点赞`
+### 前任/恋人场景
 
-**场景一：日常聊天**
+> 输入：`初恋，在一起三年，大学时期，ENFP，双子座，话痨，半夜给我发语音`
 
+**日常聊天：**
 ```
 用户      ❯ 在干嘛
 
@@ -84,8 +275,7 @@ pip3 install -r requirements.txt
              [发送了一个表情包]
 ```
 
-**场景二：回忆杀**
-
+**回忆杀：**
 ```
 用户      ❯ 还记得我们第一次约会吗
 
@@ -94,8 +284,7 @@ pip3 install -r requirements.txt
              那家店后来倒闭了你知道吗
 ```
 
-**场景三：深夜emo**
-
+**深夜emo：**
 ```
 用户      ❯ 我有点想你
 
@@ -104,133 +293,121 @@ pip3 install -r requirements.txt
              早点睡吧
 ```
 
-**场景四：吵架模式**
+### 朋友场景
 
 ```
-用户      ❯ 你当时为什么不回我消息
+用户      ❯ 周末开黑吗
 
-前任.skill ❯ 又来了
-             我说了我在忙 你非要这样
-             算了不想吵
+朋友.skill ❯ 来啊 几点
+             我先把外卖点了
+             今天必须上分
+```
+
+### 家人场景
+
+```
+用户      ❯ 妈，我下周回家
+
+家人.skill ❯ 真的啊？想吃什么妈给你做
+             你爸天天念叨你
+             房间我都收拾好了
 ```
 
 ---
 
 ## 功能特性
 
-### 数据源
+### 数据源支持
 
-| 来源 | 格式 | 备注 |
-|------|------|------|
-| 微信聊天记录 | WeChatMsg / 留痕 / PyWxDump 导出 | 推荐，信息最丰富 |
-| QQ 聊天记录 | txt / mht 导出 | 适合学生时代的恋情 |
-| 朋友圈/微博 | 截图 | 提取公开人设 |
-| 照片 | JPEG/PNG（含 EXIF） | 提取时间线和地点 |
-| 口述/粘贴 | 纯文本 | 你的主观记忆 |
+| 来源 | 格式 | 提取内容 | 优先级 |
+|------|------|---------|--------|
+| 微信聊天记录 | WeFlow / 留痕 / PyWxDump | 完整对话、语气词、回复模式 | ⭐⭐⭐ |
+| QQ 聊天记录 | txt / mht | 完整对话 | ⭐⭐⭐ |
+| 照片 | JPEG/PNG + EXIF | 时间线、地点 | ⭐⭐ |
+| 朋友圈/微博 | 截图 | 公开人设、兴趣 | ⭐⭐ |
+| 口述/粘贴 | 纯文本 | 主观记忆 | ⭐ |
 
-### 生成的 Skill 结构
+### 双层架构
 
-每个前任 Skill 由两部分组成，共同驱动输出：
+每个 Persona Skill 由两部分组成：
 
 | 部分 | 内容 |
 |------|------|
-| **Part A — Relationship Memory** | 共同经历、约会地点、inside jokes、争吵模式、甜蜜瞬间、关系时间线 |
+| **Part A — Context Memory** | 关系特定记忆：共同经历、相处模式、难忘时刻 |
 | **Part B — Persona** | 5 层性格结构：硬规则 → 身份 → 说话风格 → 情感模式 → 关系行为 |
 
-运行逻辑：`收到消息 → Persona 判断ta会怎么回 → Memory 补充共同记忆 → 用ta的方式输出`
-
-### 支持的标签
-
-**依恋类型**：安全型 · 焦虑型 · 回避型 · 混乱型
-
-**爱的语言**：肯定的言辞 · 精心的时刻 · 接受礼物 · 服务的行动 · 身体的接触
-
-**性格标签**：话痨 · 闷骚 · 嘴硬心软 · 冷暴力 · 粘人 · 独立 · 大男/女子主义 · 浪漫主义 · 实用主义 · 完美主义 · 拖延症 · 工作狂 · 控制欲 · 没有安全感 · 报复性熬夜 · 已读不回 · 秒回选手 · 朋友圈三天可见 · 半夜发语音 …
-
-**星座**：十二星座全支持，影响性格标签的翻译规则
-
-**MBTI**：16 型全支持，影响沟通风格和决策模式
+**运行逻辑：** `收到消息 → Persona 判断ta会怎么回 → Memory 补充共同记忆 → 用ta的方式输出`
 
 ### 进化机制
 
-* **追加记忆** → 找到更多聊天记录/照片 → 自动分析增量 → merge 进对应部分
-* **对话纠正** → 说「ta不会这样说」→ 写入 Correction 层，立即生效
-* **版本管理** → 每次更新自动存档，支持回滚
+- **追加记忆** → 找到更多聊天记录/照片 → 自动分析增量 → merge 进对应部分
+- **对话纠正** → 说「ta不会这样说」→ 写入 Correction 层，立即生效
+- **版本管理** → 每次更新自动存档，支持回滚
 
 ---
 
 ## 项目结构
 
-本项目遵循 [AgentSkills](https://agentskills.io) 开放标准：
-
 ```
-create-ex/
-├── SKILL.md                # skill 入口（官方 frontmatter）
+anyone-skill-main/
+├── chat.py                 # 对话入口（支持多 API）
+├── create_persona.py       # Persona Skill 创建工具
+├── SKILL.md                # Skill 定义文档
 ├── prompts/                # Prompt 模板
-│   ├── intake.md           #   对话式信息录入
-│   ├── memory_analyzer.md  #   关系记忆提取
-│   ├── persona_analyzer.md #   性格行为提取（含标签翻译表）
+│   ├── intake.md           #   信息录入模板
+│   ├── memory_analyzer.md  #   记忆提取模板
+│   ├── persona_analyzer.md #   性格分析模板
 │   ├── memory_builder.md   #   memory.md 生成模板
-│   ├── persona_builder.md  #   persona.md 五层结构模板
+│   ├── persona_builder.md  #   persona.md 生成模板
 │   ├── merger.md           #   增量 merge 逻辑
 │   └── correction_handler.md # 对话纠正处理
 ├── tools/                  # Python 工具
-│   ├── wechat_parser.py    # 微信聊天记录解析
-│   ├── qq_parser.py        # QQ 聊天记录解析
-│   ├── social_parser.py    # 社交媒体内容解析
-│   ├── photo_analyzer.py   # 照片元信息分析
-│   ├── skill_writer.py     # Skill 文件管理
-│   └── version_manager.py  # 版本存档与回滚
-├── exes/                   # 生成的前任 Skill（gitignored）
-├── docs/PRD.md
+│   ├── relationship_types.py # 关系类型定义
+│   ├── chat_engine.py      #   对话引擎
+│   ├── config/             #   配置管理
+│   │   ├── __init__.py
+│   │   └── settings.py     #     API 密钥、模型配置
+│   ├── llm/                #   LLM 客户端
+│   │   ├── __init__.py
+│   │   ├── base.py         #     抽象基类
+│   │   ├── openai_client.py
+│   │   ├── anthropic_client.py
+│   │   ├── gemini_client.py
+│   │   ├── dashscope_client.py
+│   │   ├── ollama_client.py
+│   │   └── factory.py      #     工厂模式
+│   ├── wechat_parser.py    #   微信聊天记录解析
+│   ├── qq_parser.py        #   QQ 聊天记录解析
+│   ├── social_parser.py    #   社交媒体解析
+│   ├── photo_analyzer.py   #   照片元信息分析
+│   ├── skill_writer.py     #   Skill 文件管理
+│   └── version_manager.py  #   版本管理
+├── personas/               # 生成的 Persona Skill（gitignored）
+├── .env.example            # 环境变量配置示例
+├── API_USAGE.md            # API 使用详细指南
 ├── requirements.txt
 └── LICENSE
 ```
 
 ---
 
+## 推荐的聊天记录导出工具
+
+- **[WeFlow](https://github.com/hicccc77/WeFlow)** — 微信聊天记录导出（Windows）
+- **[PyWxDump](https://github.com/xaoyaoo/PyWxDump)** — 微信数据库解密导出（Windows）
+- **留痕** — 微信聊天记录导出（macOS）
+
+---
+
 ## 注意事项
 
-* **聊天记录质量决定还原度**：微信导出 + 口述 > 仅口述
-* 建议优先提供：**深夜对话** > **争吵记录** > **日常消息**（最能体现真实性格）
-* 本项目不鼓励对前任的不健康执念，如果你发现自己过于沉浸，请寻求专业帮助
-* 你的前任是一个真实的人，ta有自己的人生。这个 Skill 只是你记忆中的ta
-
+- **聊天记录质量决定还原度**：微信导出 + 口述 > 仅口述
+- 建议优先提供：**深夜对话** > **争吵记录** > **日常消息**（最能体现真实性格）
+- 本项目不鼓励对任何人的不健康执念，如果你发现自己过于沉浸，请寻求专业帮助
+- 对于真实人物，ta有自己的人生。这个 Skill 只是你记忆中的ta
 
 ---
 
-### 推荐的聊天记录导出工具
-
-以下工具为独立的开源项目，本项目不包含它们的代码，仅在解析器中适配了它们的导出格式：
-
-- **[WeChatMsg](https://github.com/LC044/WeChatMsg)** — 微信聊天记录导出（Windows）
-- **[PyWxDump](https://github.com/xaoyaoo/PyWxDump)** — 微信数据库解密导出（Windows）
-- **留痕** — 微信聊天记录导出（macOS）
 ## 致敬 & 引用
 
-本项目的架构灵感直接来源于 **[同事.skill](https://github.com/titanwings/colleague-skill)**（by [titanwings](https://github.com/titanwings)）。同事.skill 首创了"把人蒸馏成 AI Skill"的双层架构（Work Skill + Persona），前任.skill 在此基础上将场景从职场迁移到了恋爱关系。致敬原作者的创意和开源精神。
-
-本项目遵循 [AgentSkills](https://agentskills.io) 开放标准，兼容 Claude Code 和 OpenClaw。
-
----
-
-### 推荐的聊天记录导出工具
-
-以下工具为独立的开源项目，本项目不包含它们的代码，仅在解析器中适配了它们的导出格式：
-
-- **[WeChatMsg](https://github.com/LC044/WeChatMsg)** — 微信聊天记录导出（Windows）
-- **[PyWxDump](https://github.com/xaoyaoo/PyWxDump)** — 微信数据库解密导出（Windows）
-- **留痕** — 微信聊天记录导出（macOS）
-
----
-
-### 写在最后
-人的记忆是一种不讲道理的存储介质。
-你记不住高数公式，记不住车牌号，记不住今天是几号，但你清楚记得四年前的一个下午ta穿了一件白T恤站在便利店门口等你，手里拿着两根冰棍，一根给你，一根ta自己。
-这不公平。
-这个 Skill 就是把这些不公平的记忆导出来，从生物硬盘到数字硬盘完成格式转换。
-导完以后你或许会发现，ta也没那么好。ta也没那么差。ta就是那样一个人。会在吵完架两小时后问你吃了吗。会在纪念日那天忘了发消息然后第二天假装什么都没发生。
-是的，
-此刻，阳光在江面碎成一万个夏天，闪烁，又汇聚成一个冬天。这一切在你午睡时发生，你从未察觉。
-
-MIT License © [therealXiaomanChu](https://github.com/therealXiaomanChu)
+本项目的架构灵感直接来源于 **[同事.skill](https://github.com/titanwings/colleague-skill)**（by [titanwings](https://github.com/titanwings)）。同事.skill 首创了"把人蒸馏成 AI Skill"的双层架构（Work Skill + Persona），**[前任.skill](https://github.com/therealXiaomanChu/ex-skill)** 在此基础上将场景从职场迁移到了恋爱关系，Anyone Skill 进一步扩展为支持多种关系类型的通用框架。致敬原作者的创意和开源精神。

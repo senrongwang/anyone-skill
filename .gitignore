@@ -1,6 +1,6 @@
-# 生成的前任 Skill（隐私保护，不上传）
-exes/
-!exes/example_xiaoming/
+# 生成的 Persona Skill（隐私保护，不上传）
+personas/
+!personas/example_xiaoming/
 
 # 临时文件
 /tmp/

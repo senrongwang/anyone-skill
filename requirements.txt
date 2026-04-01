@@ -1,5 +1,10 @@
-# 核心依赖（可选，没有也能用）
+# 核心依赖
 Pillow>=9.0.0          # 照片 EXIF 读取
+
+# LLM API 客户端（根据使用的模型安装）
+openai>=1.0.0          # OpenAI API (GPT-4, GPT-3.5)
+anthropic>=0.18.0      # Anthropic API (Claude)
+google-generativeai>=0.3.0  # Google Gemini API
 
 # 以下为可选增强
 # chardet>=5.0.0       # 自动检测文件编码

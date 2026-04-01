@@ -16,9 +16,9 @@ from datetime import datetime
 
 
 def list_skills(base_dir: str):
-    """列出所有已生成的前任 Skill"""
+    """列出所有已生成的 Persona Skill"""
     if not os.path.isdir(base_dir):
-        print("还没有创建任何前任 Skill。")
+        print("还没有创建任何 Persona Skill。")
         return
     
     skills = []
@@ -36,10 +36,10 @@ def list_skills(base_dir: str):
             })
     
     if not skills:
-        print("还没有创建任何前任 Skill。")
+        print("还没有创建任何 Persona Skill。")
         return
     
-    print(f"共 {len(skills)} 个前任 Skill：\n")
+    print(f"共 {len(skills)} 个 Persona Skill：\n")
     for s in skills:
         profile = s['profile']
         desc_parts = [profile.get('occupation', ''), profile.get('city', '')]
@@ -147,7 +147,7 @@ user-invocable: true
 def main():
     parser = argparse.ArgumentParser(description='Skill 文件管理器')
     parser.add_argument('--action', required=True, choices=['list', 'init', 'combine'])
-    parser.add_argument('--base-dir', default='./exes', help='基础目录')
+    parser.add_argument('--base-dir', default='./personas', help='基础目录')
     parser.add_argument('--slug', help='前任代号')
     
     args = parser.parse_args()

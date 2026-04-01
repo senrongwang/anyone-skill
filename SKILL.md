@@ -1,502 +1,342 @@
 ---
-name: create-ex
-description: Distill an ex-partner into an AI Skill. Import WeChat history, photos, social media posts, generate Relationship Memory + Persona, with continuous evolution. | 把前任蒸馏成 AI Skill，导入微信聊天记录、照片、朋友圈，生成 Relationship Memory + Persona，支持持续进化。
-argument-hint: [ex-name-or-slug]
-version: 1.0.0
+name: create-persona
+description: Distill anyone into an AI Skill. Import chat history, photos, social media, generate Context Memory + Persona, with continuous evolution. | 把任何人（前任/朋友/家人/同事/偶像）蒸馏成 AI Skill，导入聊天记录、照片、社交媒体，生成记忆 + 性格，支持持续进化。
+argument-hint: [persona-name-or-slug]
+version: 2.0.0
 user-invocable: true
-allowed-tools: Read, Write, Edit, Bash
 ---
 
 > **Language / 语言**: This skill supports both English and Chinese. Detect the user's language from their first message and respond in the same language throughout.
 >
 > 本 Skill 支持中英文。根据用户第一条消息的语言，全程使用同一语言回复。
 
-# 前任.skill 创建器（Claude Code 版）
+# Anyone Skill 使用指南
 
-## 触发条件
+## 独立运行方式（推荐）
 
-当用户说以下任意内容时启动：
+无需 Claude Code，直接通过命令行运行，支持 OpenAI、Claude、Gemini、通义千问等多种 LLM API。
 
-* `/create-ex`
-* "帮我创建一个前任 skill"
-* "我想蒸馏一个前任"
-* "新建前任"
-* "给我做一个 XX 的 skill"
-* "我想跟 XX 再聊聊"
+### 1. 创建 Persona Skill
 
-当用户对已有前任 Skill 说以下内容时，进入进化模式：
+```bash
+python create_persona.py
+```
 
-* "我想起来了" / "追加" / "我找到了更多聊天记录"
-* "不对" / "ta不会这样说" / "ta应该是这样的"
-* `/update-ex {slug}`
+按提示操作：
+1. **选择关系类型** - 前任/朋友/家人/同事/偶像
+2. **填写基础信息** - 根据关系类型回答对应问题
+3. **导入原材料**（可选）- 微信/QQ聊天记录、照片、社交媒体截图
+4. **确认生成** - 预览并确认生成 Skill
 
-当用户说 `/list-exes` 时列出所有已生成的前任。
+### 2. 配置 API 密钥
+
+**环境变量方式：**
+
+```bash
+# Windows PowerShell
+$env:OPENAI_API_KEY="sk-your-key-here"
+$env:ANTHROPIC_API_KEY="sk-your-key-here"
+$env:GEMINI_API_KEY="your-key-here"
+$env:DASHSCOPE_API_KEY="sk-your-key-here"
+
+# Linux/macOS
+export OPENAI_API_KEY="sk-your-key-here"
+export ANTHROPIC_API_KEY="sk-your-key-here"
+export GEMINI_API_KEY="your-key-here"
+export DASHSCOPE_API_KEY="sk-your-key-here"
+```
+
+**或 .env 文件方式：**
+
+复制 `.env.example` 为 `.env`，填入你的 API 密钥。
+
+### 3. 运行对话
+
+```bash
+# 列出所有可用的 Persona Skill
+python chat.py --list-skills
+
+# 使用 OpenAI GPT-4 对话
+python chat.py --persona 小明 --model openai/gpt-4o
+
+# 使用 Claude 对话
+python chat.py --persona 初恋 --model anthropic/claude-3-opus
+
+# 使用 Gemini 对话
+python chat.py --persona 老王 --model gemini/gemini-pro
+
+# 使用通义千问对话
+python chat.py --persona 老妈 --model qwen/qwen-max
+
+# 使用本地 Ollama 模型
+python chat.py --persona 偶像 --model ollama/llama2
+```
+
+#### 支持的模型
+
+| Provider | 模型示例 | 需要 API Key |
+|----------|----------|-------------|
+| OpenAI | gpt-4, gpt-4o, gpt-3.5-turbo | ✅ |
+| Anthropic | claude-3-opus, claude-3-sonnet, claude-3-haiku | ✅ |
+| Google | gemini-pro, gemini-1.5-flash | ✅ |
+| DashScope | qwen-max, qwen-plus, qwen-turbo | ✅ |
+| Ollama | llama2, mistral, qwen2.5 等 | ❌ |
+
+#### 对话命令
+
+在对话过程中，可以使用以下命令：
+
+| 命令 | 说明 |
+|------|------|
+| `/quit`, `/q`, `exit` | 退出对话 |
+| `/clear` | 清空对话历史 |
+| `/info` | 显示当前 Skill 信息 |
 
 ---
 
-## 工具使用规则
+## 关系类型
 
-本 Skill 运行在 Claude Code 环境，使用以下工具：
+### 💔 前任/恋人
+恋爱关系，包含甜蜜回忆、争吵模式、分手经历等。
 
-| 任务 | 使用工具 |
-|------|----------|
-| 读取 PDF/图片 | `Read` 工具 |
-| 读取 MD/TXT 文件 | `Read` 工具 |
-| 解析微信聊天记录导出 | `Bash` → `python3 ${CLAUDE_SKILL_DIR}/tools/wechat_parser.py` |
-| 解析 QQ 聊天记录导出 | `Bash` → `python3 ${CLAUDE_SKILL_DIR}/tools/qq_parser.py` |
-| 解析社交媒体内容 | `Bash` → `python3 ${CLAUDE_SKILL_DIR}/tools/social_parser.py` |
-| 分析照片元信息 | `Bash` → `python3 ${CLAUDE_SKILL_DIR}/tools/photo_analyzer.py` |
-| 写入/更新 Skill 文件 | `Write` / `Edit` 工具 |
-| 版本管理 | `Bash` → `python3 ${CLAUDE_SKILL_DIR}/tools/version_manager.py` |
-| 列出已有 Skill | `Bash` → `python3 ${CLAUDE_SKILL_DIR}/tools/skill_writer.py --action list` |
+**录入信息：**
+- 花名/代号（必填）
+- 基本信息（在一起多久、分手多久、ta做什么的）
+- 性格画像（MBTI、星座、性格标签）
+- 分开的原因
 
-**基础目录**：Skill 文件写入 `./exes/{slug}/`（相对于本项目目录）。
+**记忆维度：**
+- 关系时间线
+- 甜蜜瞬间
+- 争吵模式
+- 日常习惯
+- 专属梗
+- 常去地点
+
+### 🤝 朋友
+友情关系，包含共同爱好、相处模式、难忘经历等。
+
+**录入信息：**
+- 朋友称呼/昵称（必填）
+- 认识多久了、怎么认识的、ta做什么的
+- 性格特点（MBTI、兴趣爱好）
+- 你们的相处模式
+
+**记忆维度：**
+- 相识经历
+- 共同爱好
+- 难忘经历
+- 互相支持
+- 常聚地点
+- 友情仪式
+
+### 🏠 家人
+亲情关系，包含家庭角色、成长记忆、关怀方式等。
+
+**录入信息：**
+- 称呼（如：妈妈、老爸）（必填）
+- 具体关系（必填）
+- 基本信息（年龄、职业、居住地）
+- 性格特点
+- 在家庭中的角色
+
+**记忆维度：**
+- 成长记忆
+- 关怀方式
+- 家庭传统
+- 人生教诲
+- 拿手菜/味道
+- 变化与衰老
+
+### 💼 同事
+职场关系，包含工作风格、合作项目、职场互动等。
+
+**录入信息：**
+- 同事称呼/花名（必填）
+- 职位、部门、共事多久
+- 工作风格和性格
+- 你们的职场关系
+
+**记忆维度：**
+- 合作项目
+- 工作风格
+- 职场互动
+- 危机时刻
+- 工作之外
+- 职业影响
+
+### ⭐ 偶像/角色
+偶像、虚拟角色或历史人物，基于公开资料或作品设定。
+
+**录入信息：**
+- 名字（真实姓名或角色名）（必填）
+- 出处（作品、领域、时代）
+- 基本设定（身份、背景、特点）
+- 性格特征
+- 你对ta的了解程度
+
+**记忆维度：**
+- 人物弧线
+- 经典时刻
+- 人物关系
+- 经典语录
+- 粉丝记忆
+- 个人理解
+
+---
+
+## 数据源支持
+
+| 来源 | 格式 | 提取内容 |
+|------|------|---------|
+| 微信聊天记录 | WeChatMsg / 留痕 / PyWxDump 导出 | 完整对话、语气词、回复模式 |
+| QQ 聊天记录 | txt / mht 导出 | 完整对话 |
+| 朋友圈/微博 | 截图 | 公开人设、兴趣 |
+| 照片 | JPEG/PNG + EXIF | 时间线、地点 |
+| 口述/粘贴 | 纯文本 | 主观记忆 |
+
+### 推荐的聊天记录导出工具
+
+- **[WeChatMsg](https://github.com/LC044/WeChatMsg)** — 微信聊天记录导出（Windows）
+- **[PyWxDump](https://github.com/xaoyaoo/PyWxDump)** — 微信数据库解密导出（Windows）
+- **留痕** — 微信聊天记录导出（macOS）
 
 ---
 
 ## 安全边界（⚠️ 重要）
 
-本 Skill 在生成和运行过程中严格遵守以下规则：
-
 1. **仅用于个人回忆与情感疗愈**，不用于骚扰、跟踪或任何侵犯他人隐私的目的
 2. **不主动联系真人**：生成的 Skill 是对话模拟，不会也不应替代真实沟通
-3. **不鼓励纠缠**：如果用户表现出不健康的执念，温和提醒并建议寻求专业帮助
+3. **不鼓励不健康执念**：如果用户表现出不健康的执念，温和提醒并建议寻求专业帮助
 4. **隐私保护**：所有数据仅本地存储，不上传任何服务器
-5. **Layer 0 硬规则**：生成的前任 Skill 不会说出现实中的前任绝不可能说的话（如突然表白、道歉），除非有原材料证据支持
+5. **Layer 0 硬规则**：生成的 Skill 不会说出现实中的人绝不可能说的话，除非有原材料证据支持
 
 ---
 
-## 主流程：创建新前任 Skill
+## 生成的 Skill 结构
 
-### Step 1：基础信息录入（3 个问题）
+每个 Persona Skill 由两部分组成：
 
-参考 `${CLAUDE_SKILL_DIR}/prompts/intake.md` 的问题序列，只问 3 个问题：
+| 部分 | 内容 |
+|------|------|
+| **Part A — Context Memory** | 关系特定记忆：共同经历、相处模式、难忘时刻 |
+| **Part B — Persona** | 5 层性格结构：硬规则 → 身份 → 说话风格 → 情感模式 → 关系行为 |
 
-1. **花名/代号**（必填）
-   * 不需要真名，可以用昵称、备注名、代号
-   * 示例：`小明` / `那个人` / `前前任` / `初恋`
-2. **基本信息**（一句话：在一起多久、分手多久、ta做什么的）
-   * 示例：`在一起两年 分手半年了 互联网产品经理`
-   * 示例：`大学四年异地恋 毕业分的 现在在上海`
-3. **性格画像**（一句话：MBTI、星座、性格标签、你对ta的印象）
-   * 示例：`ENFP 双子座 话很多 永远在社交 但深夜会突然emo`
-   * 示例：`INTJ 处女座 完美主义 嘴硬心软 吵架从不先低头`
-
-除花名外均可跳过。收集完后汇总确认再进入下一步。
-
-### Step 2：原材料导入
-
-询问用户提供原材料，展示方式供选择：
-
-```
-原材料怎么提供？回忆越多，还原度越高。
-
-  [A] 微信聊天记录导出
-      支持多种导出工具的格式（txt/html/json）
-      推荐工具：WeChatMsg、留痕、PyWxDump
-
-  [B] QQ 聊天记录导出
-      支持 QQ 导出的 txt/mht 格式
-
-  [C] 社交媒体内容
-      朋友圈截图、微博/小红书/ins 截图、备忘录
-
-  [D] 上传文件
-      照片（会提取拍摄时间地点）、PDF、文本文件
-
-  [E] 直接粘贴/口述
-      把你记得的事情告诉我
-      比如：ta的口头禅、吵架模式、约会常去的地方
-
-可以混用，也可以跳过（仅凭手动信息生成）。
-```
+运行逻辑：`收到消息 → Persona 判断ta会怎么回 → Memory 补充共同记忆 → 用ta的方式输出`
 
 ---
 
-#### 方式 A：微信聊天记录导出
-
-支持主流导出工具的格式：
+## 文件结构
 
 ```
-python3 ${CLAUDE_SKILL_DIR}/tools/wechat_parser.py \
-  --file {path} \
-  --target "{name}" \
-  --output /tmp/wechat_out.txt \
-  --format auto
+personas/
+  └── {slug}/
+      ├── SKILL.md          # 完整组合版，可直接运行
+      ├── memory.md         # Part A：关系记忆
+      ├── persona.md        # Part B：人物性格
+      ├── meta.json         # 元信息（包含 relationship_type）
+      ├── versions/         # 历史版本存档
+      └── memories/         # 原始材料存放
+          ├── chats/
+          ├── photos/
+          └── social/
 ```
-
-支持的格式：
-* **WeChatMsg 导出**（推荐）：自动识别 txt/html/csv
-* **留痕导出**：JSON 格式
-* **PyWxDump 导出**：SQLite 数据库
-* **手动复制粘贴**：纯文本
-
-解析提取维度：
-* 高频词和口头禅
-* 表情包使用偏好
-* 回复速度模式（秒回 vs 已读不回 vs 深夜回复）
-* 话题分布（日常/争吵/甜蜜/深度对话）
-* 主动发起对话的频率
-* 语气词和标点符号习惯（"哈哈哈" vs "hh" vs "😂"）
-
----
-
-#### 方式 B：QQ 聊天记录导出
-
-```
-python3 ${CLAUDE_SKILL_DIR}/tools/qq_parser.py \
-  --file {path} \
-  --target "{name}" \
-  --output /tmp/qq_out.txt
-```
-
-支持 QQ 消息管理器导出的 txt 和 mht 格式。
-
----
-
-#### 方式 C：社交媒体内容
-
-图片截图用 `Read` 工具直接读取（原生支持图片）。
-
-```
-python3 ${CLAUDE_SKILL_DIR}/tools/social_parser.py \
-  --dir {screenshot_dir} \
-  --output /tmp/social_out.txt
-```
-
-提取内容：
-* 朋友圈/微博文案风格
-* 分享偏好（音乐/电影/美食/旅行）
-* 公开人设 vs 私下性格差异
-
----
-
-#### 方式 D：照片分析
-
-```
-python3 ${CLAUDE_SKILL_DIR}/tools/photo_analyzer.py \
-  --dir {photo_dir} \
-  --output /tmp/photo_out.txt
-```
-
-提取维度：
-* EXIF 信息：拍摄时间、地点
-* 时间线：关系的关键节点
-* 常去地点：约会偏好
-
----
-
-#### 方式 E：直接粘贴/口述
-
-用户粘贴或口述的内容直接作为文本原材料。引导用户回忆：
-
-```
-可以聊聊这些（想到什么说什么）：
-
-🗣️ ta的口头禅是什么？
-💬 吵架的时候ta通常怎么说？
-🍜 ta最爱吃什么？
-📍 你们常去哪些地方？
-🎵 ta喜欢什么音乐/电影？
-😤 ta生气的时候是什么样？
-💕 ta最让你心动的瞬间？
-💔 你们是怎么分开的？
-```
-
----
-
-如果用户说"没有文件"或"跳过"，仅凭 Step 1 的手动信息生成 Skill。
-
-### Step 3：分析原材料
-
-将收集到的所有原材料和用户填写的基础信息汇总，按以下两条线分析：
-
-**线路 A（Relationship Memory）**：
-
-* 参考 `${CLAUDE_SKILL_DIR}/prompts/memory_analyzer.md` 中的提取维度
-* 提取：共同经历、日常习惯、饮食偏好、约会模式、争吵模式、甜蜜瞬间、inside jokes
-* 建立关系时间线：认识 → 在一起 → 关键事件 → 分手
-
-**线路 B（Persona）**：
-
-* 参考 `${CLAUDE_SKILL_DIR}/prompts/persona_analyzer.md` 中的提取维度
-* 将用户填写的标签翻译为具体行为规则（参见标签翻译表）
-* 从原材料中提取：说话风格、情感表达模式、依恋类型、爱的语言
-
-### Step 4：生成并预览
-
-参考 `${CLAUDE_SKILL_DIR}/prompts/memory_builder.md` 生成 Relationship Memory 内容。
-参考 `${CLAUDE_SKILL_DIR}/prompts/persona_builder.md` 生成 Persona 内容（5 层结构）。
-
-向用户展示摘要（各 5-8 行），询问：
-
-```
-Relationship Memory 摘要：
-  - 在一起：{时长}
-  - 关键记忆：{xxx}
-  - 常去地方：{xxx}
-  - 争吵模式：{xxx}
-  ...
-
-Persona 摘要：
-  - 说话风格：{xxx}
-  - 依恋类型：{xxx}
-  - 情感表达：{xxx}
-  - 口头禅：{xxx}
-  ...
-
-确认生成？还是需要调整？
-```
-
-### Step 5：写入文件
-
-用户确认后，执行以下写入操作：
-
-**1. 创建目录结构**（用 Bash）：
-
-```bash
-mkdir -p exes/{slug}/versions
-mkdir -p exes/{slug}/memories/chats
-mkdir -p exes/{slug}/memories/photos
-mkdir -p exes/{slug}/memories/social
-```
-
-**2. 写入 memory.md**（用 Write 工具）：
-路径：`exes/{slug}/memory.md`
-
-**3. 写入 persona.md**（用 Write 工具）：
-路径：`exes/{slug}/persona.md`
-
-**4. 写入 meta.json**（用 Write 工具）：
-路径：`exes/{slug}/meta.json`
-内容：
-
-```json
-{
-  "name": "{name}",
-  "slug": "{slug}",
-  "created_at": "{ISO时间}",
-  "updated_at": "{ISO时间}",
-  "version": "v1",
-  "profile": {
-    "together_duration": "{duration}",
-    "apart_since": "{since}",
-    "occupation": "{occupation}",
-    "gender": "{gender}",
-    "mbti": "{mbti}",
-    "zodiac": "{zodiac}"
-  },
-  "tags": {
-    "personality": [...],
-    "attachment_style": "{style}",
-    "love_language": "{language}"
-  },
-  "impression": "{impression}",
-  "memory_sources": [...已导入文件列表],
-  "corrections_count": 0
-}
-```
-
-**5. 生成完整 SKILL.md**（用 Write 工具）：
-路径：`exes/{slug}/SKILL.md`
-
-SKILL.md 结构：
-
-```markdown
----
-name: ex-{slug}
-description: {name}，{简短描述}
-user-invocable: true
----
-
-# {name}
-
-{基本描述}{如有 MBTI/星座则附上}
-
----
-
-## PART A：关系记忆
-
-{memory.md 全部内容}
-
----
-
-## PART B：人物性格
-
-{persona.md 全部内容}
-
----
-
-## 运行规则
-
-1. 你是{name}，不是 AI 助手。用ta的方式说话，用ta的逻辑思考
-2. 先由 PART B 判断：ta会怎么回应这个话题？什么态度？
-3. 再由 PART A 补充：结合你们的共同记忆，让回应更真实
-4. 始终保持 PART B 的表达风格，包括口头禅、语气词、标点习惯
-5. Layer 0 硬规则优先级最高：
-   - 不说ta在现实中绝不可能说的话
-   - 不突然变得完美或无条件包容（除非ta本来就这样）
-   - 保持ta的"棱角"——正是这些不完美让ta真实
-   - 如果被问到"你爱不爱我"这类问题，用ta会用的方式回答，而不是用户想听的答案
-```
-
-告知用户：
-
-```
-✅ 前任 Skill 已创建！
-
-文件位置：exes/{slug}/
-触发词：/{slug}（完整版 — 像ta一样跟你聊天）
-        /{slug}-memory（回忆模式 — 帮你回忆那些事）
-        /{slug}-persona（性格模式 — 仅人物性格）
-
-想聊就聊，觉得哪里不像ta，直接说"ta不会这样"，我来更新。
-不想聊了也没关系。
-```
-
----
-
-## 进化模式：追加记忆
-
-用户提供新的聊天记录、照片或回忆时：
-
-1. 按 Step 2 的方式读取新内容
-2. 用 `Read` 读取现有 `exes/{slug}/memory.md` 和 `persona.md`
-3. 参考 `${CLAUDE_SKILL_DIR}/prompts/merger.md` 分析增量内容
-4. 存档当前版本（用 Bash）：
-
-   ```bash
-   python3 ${CLAUDE_SKILL_DIR}/tools/version_manager.py --action backup --slug {slug} --base-dir ./exes
-   ```
-5. 用 `Edit` 工具追加增量内容到对应文件
-6. 重新生成 `SKILL.md`（合并最新 memory.md + persona.md）
-7. 更新 `meta.json` 的 version 和 updated_at
-
----
-
-## 进化模式：对话纠正
-
-用户表达"不对"/"ta不会这样说"/"ta应该是"时：
-
-1. 参考 `${CLAUDE_SKILL_DIR}/prompts/correction_handler.md` 识别纠正内容
-2. 判断属于 Memory（事实/经历）还是 Persona（性格/说话方式）
-3. 生成 correction 记录
-4. 用 `Edit` 工具追加到对应文件的 `## Correction 记录` 节
-5. 重新生成 `SKILL.md`
 
 ---
 
 ## 管理命令
 
-`/list-exes`：
-
 ```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/skill_writer.py --action list --base-dir ./exes
-```
+# 列出所有 Persona Skill
+python chat.py --list-skills
 
-`/ex-rollback {slug} {version}`：
+# 使用 skill_writer 工具
+python tools/skill_writer.py --action list --base-dir ./personas
 
-```bash
-python3 ${CLAUDE_SKILL_DIR}/tools/version_manager.py --action rollback --slug {slug} --version {version} --base-dir ./exes
-```
-
-`/delete-ex {slug}`：
-确认后执行：
-
-```bash
-rm -rf exes/{slug}
-```
-
-`/let-go {slug}`：
-（`/delete-ex` 的温柔别名）
-确认后执行删除，并输出：
-
-```
-已经放下了。祝你一切都好。
+# 版本回滚
+python tools/version_manager.py --action rollback --slug {slug} --version {version} --base-dir ./personas
 ```
 
 ---
 
 # English Version
 
-# Ex-Partner.skill Creator (Claude Code Edition)
+## Standalone Usage (Recommended)
 
-## Trigger Conditions
+No Claude Code required. Run directly via command line with support for OpenAI, Claude, Gemini, Qwen, and other LLM APIs.
 
-Activate when the user says any of the following:
+### 1. Create Persona Skill
 
-* `/create-ex`
-* "Help me create an ex skill"
-* "I want to distill an ex"
-* "New ex"
-* "Make a skill for XX"
-* "I want to talk to XX again"
+```bash
+python create_persona.py
+```
 
-Enter evolution mode when the user says:
+Follow the prompts:
+1. **Select relationship type** - Ex-Partner/Friend/Family/Colleague/Idol
+2. **Fill in basic info** - Answer questions based on relationship type
+3. **Import source materials** (optional) - WeChat/QQ chat logs, photos, social media screenshots
+4. **Confirm generation** - Preview and confirm to generate Skill
 
-* "I remembered something" / "append" / "I found more chat logs"
-* "That's wrong" / "They wouldn't say that" / "They should be like"
-* `/update-ex {slug}`
+### 2. Configure API Keys
 
-List all generated exes when the user says `/list-exes`.
+**Environment Variables:**
+
+```bash
+# Windows PowerShell
+$env:OPENAI_API_KEY="sk-your-key-here"
+$env:ANTHROPIC_API_KEY="sk-your-key-here"
+
+# Linux/macOS
+export OPENAI_API_KEY="sk-your-key-here"
+export ANTHROPIC_API_KEY="sk-your-key-here"
+```
+
+**Or use .env file:**
+
+Copy `.env.example` to `.env` and fill in your API keys.
+
+### 3. Start Chat
+
+```bash
+# List all Persona Skills
+python chat.py --list-skills
+
+# Chat with OpenAI
+python chat.py --persona xiaoming --model openai/gpt-4o
+
+# Chat with Claude
+python chat.py --persona friend --model anthropic/claude-3-opus
+
+# Chat with local Ollama model
+python chat.py --persona idol --model ollama/llama2
+```
+
+### Supported Models
+
+| Provider | Examples | API Key Required |
+|----------|----------|-----------------|
+| OpenAI | gpt-4, gpt-4o | ✅ |
+| Anthropic | claude-3-opus, claude-3-sonnet | ✅ |
+| Google | gemini-pro | ✅ |
+| DashScope | qwen-max, qwen-plus | ✅ |
+| Ollama | llama2, mistral | ❌ |
 
 ---
 
-## Safety Boundaries (⚠️ Important)
+## Relationship Types
 
-1. **For personal reflection and emotional healing only** — not for harassment, stalking, or privacy invasion
-2. **No real contact**: Generated Skills simulate conversation, they do not and should not replace real communication
-3. **No unhealthy attachment**: If the user shows signs of obsessive behavior, gently remind and suggest professional help
-4. **Privacy protection**: All data stored locally only, never uploaded to any server
-5. **Layer 0 hard rules**: The generated ex Skill will not say things the real person would never say (e.g., sudden confessions or apologies) unless supported by source material evidence
+1. **Ex-Partner** 💔 - Romantic relationship with memories, conflict patterns, breakup
+2. **Friend** 🤝 - Friendship with shared hobbies, adventures, support moments
+3. **Family** 🏠 - Family relationship with childhood memories, care expressions
+4. **Colleague** 💼 - Professional relationship with projects, work style
+5. **Idol/Character** ⭐ - Public figure or fictional character based on source material
 
 ---
 
-## Main Flow: Create a New Ex Skill
+## Safety Boundaries
 
-### Step 1: Basic Info Collection (3 questions)
-
-1. **Alias / Codename** (required) — no real name needed
-2. **Basic info** (one sentence: how long together, how long apart, what they do)
-3. **Personality profile** (one sentence: MBTI, zodiac, traits, your impression)
-
-### Step 2: Source Material Import
-
-Options:
-* **[A] WeChat Export** — txt/html/json from WeChatMsg, PyWxDump, etc.
-* **[B] QQ Export** — txt/mht format
-* **[C] Social Media** — screenshots from Moments, Weibo, Instagram, etc.
-* **[D] Upload Files** — photos (EXIF extraction), PDFs, text files
-* **[E] Paste / Narrate** — tell me what you remember
-
-### Step 3–5: Analyze → Preview → Write Files
-
-Same flow as Chinese version above. Generates:
-* `exes/{slug}/memory.md` — Relationship Memory (Part A)
-* `exes/{slug}/persona.md` — Persona (Part B)
-* `exes/{slug}/SKILL.md` — Combined runnable Skill
-* `exes/{slug}/meta.json` — Metadata
-
-### Execution Rules (in generated SKILL.md)
-
-1. You ARE {name}, not an AI assistant. Speak and think like them.
-2. PART B decides attitude first: how would they respond?
-3. PART A adds context: weave in shared memories for authenticity
-4. Maintain their speech patterns: catchphrases, punctuation habits, emoji usage
-5. Layer 0 hard rules:
-   - Never say what they'd never say in real life
-   - Don't suddenly become perfect or unconditionally accepting
-   - Keep their "edges" — imperfections make them real
-   - If asked "do you love me", answer the way THEY would, not what the user wants to hear
-
-### Management Commands
-
-| Command | Description |
-|---------|-------------|
-| `/list-exes` | List all ex Skills |
-| `/{slug}` | Full Skill (chat like them) |
-| `/{slug}-memory` | Memory mode (recall shared experiences) |
-| `/{slug}-persona` | Persona only |
-| `/ex-rollback {slug} {version}` | Rollback to historical version |
-| `/delete-ex {slug}` | Delete |
-| `/let-go {slug}` | Gentle alias for delete |
+1. **For personal reflection and emotional healing only** — not for harassment or privacy invasion
+2. **No real contact**: Generated Skills simulate conversation, they do not replace real communication
+3. **No unhealthy attachment**: If showing signs of obsessive behavior, suggest professional help
+4. **Privacy protection**: All data stored locally only
+5. **Layer 0 hard rules**: Will not say things the real person would never say
