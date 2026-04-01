@@ -414,4 +414,4 @@ anyone-skill-main/
 
 ## 致敬 & 引用
 
-本项目的架构灵感直接来源于 **[同事.skill](https://github.com/titanwings/colleague-skill)。同事.skill 首创了"把人蒸馏成 AI Skill"的双层架构（Work Skill + Persona），**[前任.skill](https://github.com/therealXiaomanChu/ex-skill)** 在此基础上将场景从职场迁移到了恋爱关系，[Anyone.Skill](https://github.com/senrongwang/anyone-skill) 进一步扩展为支持多种关系类型的通用框架。致敬原作者的创意和开源精神。
+本项目灵感直接来源于 **[前任.skill](https://github.com/therealXiaomanChu/ex-skill)。**[同事.skill](https://github.com/titanwings/colleague-skill)首创了"把人蒸馏成 AI Skill"的双层架构（Work Skill + Persona），**[前任.skill](https://github.com/therealXiaomanChu/ex-skill)在此基础上将场景从职场迁移到了恋爱关系，[Anyone.Skill](https://github.com/senrongwang/anyone-skill) 进一步扩展为支持多种关系类型的通用框架。致敬原作者的创意和开源精神。
