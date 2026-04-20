@@ -302,6 +302,22 @@ def analyze_messages(messages: list, target_name: str) -> dict:
         '简洁型': avg_length < 15,
     }
     
+    # 提取部分原始对话片段（用于展示说话风格和互动模式）
+    raw_conversations = []
+    # 提取前100条消息中的对话片段
+    sample_range = messages[:100]
+    if sample_range:
+        conv_lines = []
+        for msg in sample_range:
+            sender = msg.get('sender', '未知')
+            content = msg.get('content', '')
+            timestamp = msg.get('timestamp', '')
+            if content:
+                # 简化时间戳显示
+                time_str = timestamp.split(' ')[-1] if ' ' in timestamp else timestamp
+                conv_lines.append(f"{time_str} {sender}: {content}")
+        raw_conversations = '\n'.join(conv_lines)
+    
     return {
         'target_name': target_name,
         'total_messages': len(messages),
@@ -321,6 +337,7 @@ def analyze_messages(messages: list, target_name: str) -> dict:
             'care_messages': care_messages[:10],  # 关心语句
         },
         'sample_messages': [m['content'] for m in target_msgs[:50] if m.get('content')],
+        'raw_conversations': raw_conversations,  # 新增：原始对话片段
     }
 
 

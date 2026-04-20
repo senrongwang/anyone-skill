@@ -156,6 +156,7 @@ python chat.py --persona 老王 --model gemini/gemini-pro
 
 # 使用通义千问对话
 python chat.py --persona 老妈 --model qwen/qwen-max
+python chat.py --persona 老妈 --model qwen/qwen3-max-preview
 
 # 使用本地 Ollama 模型（无需 API Key）
 python chat.py --persona 偶像 --model ollama/llama2

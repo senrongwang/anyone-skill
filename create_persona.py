@@ -25,6 +25,9 @@ from tools.relationship_types import (
     RelationshipCategory,
     list_relationship_types
 )
+from tools.prompt_loader import load_prompt
+from tools.llm.factory import LLMFactory
+from tools.llm.base import Message
 
 
 def print_banner():
@@ -128,6 +131,7 @@ def step3_import_sources(slug: str, name: str, rel_type):
     
     sources = []
     raw_content = []
+    wechat_stats = None  # 用于保存微信统计分析
     
     if 'A' in choices:
         print("\n--- 微信聊天记录 ---")
@@ -204,15 +208,34 @@ def step3_import_sources(slug: str, name: str, rel_type):
                     content_parts.append("\n#### 时间偏好")
                     content_parts.append(f"常提及：{', '.join(analysis['time_references'][:5])}")
                 
-                # 添加样本消息
+                # 这是用于最终保存的统计分析部分（不包含样本消息和原始对话）
+                stats_only_content = "\n".join(content_parts)
+                
+                # 添加更多样本消息（增加到50条）- 仅用于LLM分析，不保存到最终文件
                 if result.get('sample_messages'):
-                    content_parts.append("\n#### 典型消息样本")
-                    for i, msg in enumerate(result['sample_messages'][:15], 1):
+                    content_parts.append("\n#### 典型消息样本（前50条）")
+                    sample_count = min(50, len(result['sample_messages']))
+                    for i, msg in enumerate(result['sample_messages'][:sample_count], 1):
                         content_parts.append(f"{i}. {msg}")
+                
+                # 添加原始对话片段（如果有）- 仅用于LLM分析，不保存到最终文件
+                if result.get('raw_conversations'):
+                    content_parts.append("\n#### 原始对话片段")
+                    content_parts.append("以下是部分原始对话记录，供参考说话风格和互动模式：")
+                    content_parts.append("```")
+                    # 限制原始对话的长度，避免超出token限制
+                    raw_conv = result['raw_conversations']
+                    if len(raw_conv) > 5000:
+                        raw_conv = raw_conv[:5000] + "\n...（对话过长，已截断）"
+                    content_parts.append(raw_conv)
+                    content_parts.append("```")
+                
+                # 保存统计分析部分，供后续使用
+                wechat_stats = stats_only_content
                 
                 raw_content.append("\n".join(content_parts))
                 sources.append(file_path)
-                print(f"✓ 已解析微信聊天记录")
+                print(f"✓ 已解析微信聊天记录（包含{result.get('total_messages', 'N/A')}条消息的统计分析 + 原始对话片段）")
             except Exception as e:
                 print(f"✗ 解析失败: {e}")
                 import traceback
@@ -313,7 +336,7 @@ def step3_import_sources(slug: str, name: str, rel_type):
         if lines:
             raw_content.append(f"## 口述回忆\n\n" + "\n".join(lines))
     
-    return sources, "\n\n".join(raw_content)
+    return sources, "\n\n".join(raw_content), wechat_stats
 
 
 def step4_generate_content(info: dict, raw_content: str, rel_type):
@@ -324,9 +347,70 @@ def step4_generate_content(info: dict, raw_content: str, rel_type):
     
     info['raw_content'] = raw_content
     
-    # 使用关系类型生成模板
+    # 首先使用模板生成基础版本
     memory_content = rel_type.generate_memory_template(info)
     persona_content = rel_type.generate_persona_template(info)
+    
+    # 如果有原始内容，使用 LLM 进行智能填充
+    if raw_content and len(raw_content.strip()) > 100:
+        print("\n检测到原始材料，正在使用 AI 智能提取记忆...")
+        try:
+            # 加载对应关系类型的记忆分析器提示词
+            category_value = rel_type.category.value
+            analyzer_prompt = load_prompt(category_value, 'memory_analyzer')
+            
+            # 构建完整的分析请求
+            analysis_request = f"""{analyzer_prompt}
+
+---
+
+## 原始材料
+
+{raw_content}
+
+---
+
+## 任务
+
+请根据上述原始材料，提取并填充记忆字段。
+对于无法从材料中提取的信息，保持“[待补充]”标记。
+
+**重要**：请在输出的最后保留原始的"聊天记录分析"部分（包含统计分析结果），不要删除或修改它。
+
+请直接输出填充后的完整 Markdown 内容，不要添加额外说明。
+"""
+            
+            # 调用 LLM
+            client = LLMFactory.create_client('qwen/qwen-max')
+            messages = [
+                Message(role='system', content='你是一个专业的关系记忆分析师。'),
+                Message(role='user', content=analysis_request)
+            ]
+            
+            response = client.chat(messages, temperature=0.7, max_tokens=4000)
+            ai_filled_content = response.content
+            
+            # 清理 AI 输出：移除“典型消息样本”及以后的内容
+            if '#### 典型消息样本' in ai_filled_content:
+                sample_idx = ai_filled_content.find('#### 典型消息样本')
+                ai_filled_content = ai_filled_content[:sample_idx].rstrip()
+            
+            # 确保统计信息被保留 - 使用纯统计部分（不包含样本消息和原始对话）
+            wechat_stats = info.get('wechat_stats', '')
+            if wechat_stats:
+                # 将统计分析追加到 AI 填充的内容后面
+                memory_content = ai_filled_content + "\n\n## 聊天记录分析\n\n" + wechat_stats
+            else:
+                memory_content = ai_filled_content
+            
+            print("✓ 记忆分析完成")
+            
+        except Exception as e:
+            print(f"⚠ AI 分析失败 ({e})，使用基础模板")
+            # 即使AI失败，也要保留统计信息
+            wechat_stats = info.get('wechat_stats', '')
+            if wechat_stats:
+                memory_content = memory_content + "\n\n## 聊天记录分析\n\n" + wechat_stats
     
     return memory_content, persona_content
 
@@ -434,7 +518,7 @@ user-invocable: true
 1. 你是{info['name']}，不是 AI 助手。用ta的方式说话，用ta的逻辑思考
 2. 先由 PART B 判断：ta会怎么回应这个话题？什么态度？
 3. 再由 PART A 补充：结合你们的共同记忆，让回应更真实
-4. 始终保持 PART B 的表达风格，包括口头禅、语气词、标点习惯
+4. 始终保持 PART A 的表达风格，包括口头禅、语气词、标点习惯、平均消息长度
 5. Layer 0 硬规则优先级最高：
    - 不说ta在现实中绝不可能说的话
    - 不突然变得完美或无条件包容（除非ta本来就这样）
@@ -458,7 +542,11 @@ def main():
     info = step2_basic_info(rel_type)
     
     # Step 3: 原材料导入
-    sources, raw_content = step3_import_sources(info['slug'], info['name'], rel_type)
+    sources, raw_content, wechat_stats = step3_import_sources(info['slug'], info['name'], rel_type)
+    
+    # 保存微信统计信息到 info
+    if wechat_stats:
+        info['wechat_stats'] = wechat_stats
     
     # Step 4: 生成内容
     memory_content, persona_content = step4_generate_content(info, raw_content, rel_type)
@@ -489,6 +577,7 @@ def main():
 
 
 if __name__ == '__main__':
+    # E:\Awsr\聊天agent\data\私聊_杨步凡.json
     try:
         main()
     except KeyboardInterrupt:
