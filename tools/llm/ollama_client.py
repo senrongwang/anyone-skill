@@ -18,18 +18,6 @@ class OllamaClient(BaseLLMClient):
         super().__init__(config)
         self.base_url = config.base_url or 'http://localhost:11434'
     
-    def validate_config(self) -> bool:
-        """验证配置 - 检查 Ollama 服务是否可用"""
-        try:
-            req = urllib.request.Request(
-                f"{self.base_url}/api/tags",
-                method='GET'
-            )
-            with urllib.request.urlopen(req, timeout=5) as response:
-                return response.status == 200
-        except Exception:
-            return False
-    
     def _convert_messages(self, messages: List[Message]) -> tuple:
         """转换消息格式"""
         system_msg = None
@@ -81,7 +69,6 @@ class OllamaClient(BaseLLMClient):
                     provider=self.provider,
                     usage=None,
                     finish_reason='stop' if result.get('done') else None,
-                    raw_response=result
                 )
         except urllib.error.URLError as e:
             raise ConnectionError(f"无法连接到 Ollama 服务: {e}. 请确保 Ollama 已启动并运行在 {self.base_url}")

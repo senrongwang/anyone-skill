@@ -6,7 +6,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://python.org)
-[![Multi API](https://img.shields.io/badge/Multi%20API-OpenAI%20%7C%20Claude%20%7C%20Gemini%20%7C%20Qwen-orange)](API_USAGE.md)
+[![Multi API](https://img.shields.io/badge/Multi%20API-OpenAI%20%7C%20Claude%20%7C%20Gemini%20%7C%20Qwen%20%7C%20DeepSeek-orange)](API_USAGE.md)
 
 &nbsp;
 
@@ -46,7 +46,6 @@ pip install -r requirements.txt
 - `openai` - OpenAI API 客户端
 - `anthropic` - Claude API 客户端
 - `google-generativeai` - Gemini API 客户端
-- `dashscope` - 通义千问 API 客户端
 - `Pillow` - 图片处理（照片 EXIF 提取）
 
 ---
@@ -118,12 +117,14 @@ $env:OPENAI_API_KEY="sk-your-key-here"
 $env:ANTHROPIC_API_KEY="sk-your-key-here"
 $env:GEMINI_API_KEY="your-key-here"
 $env:DASHSCOPE_API_KEY="sk-your-key-here"
+$env:DEEPSEEK_API_KEY="sk-your-key-here"
 
 # Linux/macOS
 export OPENAI_API_KEY="sk-your-key-here"
 export ANTHROPIC_API_KEY="sk-your-key-here"
 export GEMINI_API_KEY="your-key-here"
 export DASHSCOPE_API_KEY="sk-your-key-here"
+export DEEPSEEK_API_KEY="sk-your-key-here"
 ```
 
 **方式二：.env 文件**
@@ -135,6 +136,7 @@ OPENAI_API_KEY=sk-your-key-here
 ANTHROPIC_API_KEY=sk-your-key-here
 GEMINI_API_KEY=your-key-here
 DASHSCOPE_API_KEY=sk-your-key-here
+DEEPSEEK_API_KEY=sk-your-key-here
 ```
 
 ---
@@ -158,6 +160,10 @@ python chat.py --persona 老王 --model gemini/gemini-pro
 python chat.py --persona 老妈 --model qwen/qwen-max
 python chat.py --persona 老妈 --model qwen/qwen3-max-preview
 
+# 使用 DeepSeek 对话
+python chat.py --persona 花花 --model deepseek/deepseek-v4-pro
+python chat.py --persona 花花 --model deepseek/deepseek-v4-flash
+
 # 使用本地 Ollama 模型（无需 API Key）
 python chat.py --persona 偶像 --model ollama/llama2
 ```
@@ -170,6 +176,7 @@ python chat.py --persona 偶像 --model ollama/llama2
 | Anthropic | claude-3-opus, claude-3-sonnet, claude-3-haiku | ✅ |
 | Google | gemini-pro, gemini-1.5-flash | ✅ |
 | DashScope | qwen-max, qwen-plus, qwen-turbo | ✅ |
+| DeepSeek | deepseek-v4-pro, deepseek-v4-flash, deepseek-chat | ✅ |
 | Ollama | llama2, mistral, qwen2.5 等 | ❌ |
 
 #### 对话中的命令
@@ -383,7 +390,6 @@ anyone-skill-main/
 │   │   ├── openai_client.py
 │   │   ├── anthropic_client.py
 │   │   ├── gemini_client.py
-│   │   ├── dashscope_client.py
 │   │   ├── ollama_client.py
 │   │   └── factory.py      #     工厂模式
 │   ├── relationship_types.py # 关系类型定义

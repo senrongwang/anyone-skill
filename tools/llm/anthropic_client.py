@@ -20,12 +20,6 @@ class AnthropicClient(BaseLLMClient):
         
         self.client = anthropic.Anthropic(api_key=config.api_key)
     
-    def validate_config(self) -> bool:
-        """验证配置"""
-        if not self.config.api_key:
-            return False
-        return True
-    
     def _convert_messages(self, messages: List[Message]) -> tuple:
         """转换消息格式为 Claude 格式
         
@@ -75,7 +69,6 @@ class AnthropicClient(BaseLLMClient):
                 'output_tokens': response.usage.output_tokens
             } if response.usage else None,
             finish_reason=response.stop_reason,
-            raw_response=response
         )
     
     def chat_stream(self, messages: List[Message], **kwargs) -> Generator[str, None, None]:

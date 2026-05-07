@@ -29,6 +29,7 @@ class ModelConfig:
                 'gemini': 'GEMINI_API_KEY',
                 'google': 'GOOGLE_API_KEY',
                 'dashscope': 'DASHSCOPE_API_KEY',
+                'deepseek': 'DEEPSEEK_API_KEY',
             }
             env_var = env_var_map.get(self.provider)
             if env_var:
@@ -104,6 +105,35 @@ class Settings:
                 model='gemini-1.5-flash',
                 temperature=0.7,
                 max_tokens=2000
+            ),
+            # DeepSeek
+            'deepseek/deepseek-v4-flash': ModelConfig(
+                provider='deepseek',
+                model='deepseek-v4-flash',
+                base_url='https://api.deepseek.com',
+                temperature=0.7,
+                max_tokens=4096
+            ),
+            'deepseek/deepseek-v4-pro': ModelConfig(
+                provider='deepseek',
+                model='deepseek-v4-pro',
+                base_url='https://api.deepseek.com',
+                temperature=0.7,
+                max_tokens=4096
+            ),
+            'deepseek/deepseek-chat': ModelConfig(
+                provider='deepseek',
+                model='deepseek-chat',
+                base_url='https://api.deepseek.com',
+                temperature=0.7,
+                max_tokens=4096
+            ),
+            'deepseek/deepseek-reasoner': ModelConfig(
+                provider='deepseek',
+                model='deepseek-reasoner',
+                base_url='https://api.deepseek.com',
+                temperature=0.7,
+                max_tokens=4096
             ),
             # 阿里云 DashScope (通义千问)
             'qwen/qwen-max': ModelConfig(

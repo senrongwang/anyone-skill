@@ -21,12 +21,6 @@ class GeminiClient(BaseLLMClient):
         genai.configure(api_key=config.api_key)
         self.client = genai.GenerativeModel(model_name=config.model)
     
-    def validate_config(self) -> bool:
-        """验证配置"""
-        if not self.config.api_key:
-            return False
-        return True
-    
     def _convert_messages(self, messages: List[Message]) -> tuple:
         """转换消息格式为 Gemini 格式
         
@@ -85,7 +79,6 @@ class GeminiClient(BaseLLMClient):
             provider=self.provider,
             usage=None,  # Gemini 不返回 token 使用信息
             finish_reason=None,
-            raw_response=response
         )
     
     def chat_stream(self, messages: List[Message], **kwargs) -> Generator[str, None, None]:

@@ -8,7 +8,6 @@ from .openai_client import OpenAIClient
 from .anthropic_client import AnthropicClient
 from .gemini_client import GeminiClient
 from .ollama_client import OllamaClient
-from .dashscope_client import DashScopeClient
 
 
 class LLMFactory:
@@ -16,8 +15,6 @@ class LLMFactory:
     
     根据配置创建对应的 LLM 客户端实例
     """
-    
-    _clients = {}
     
     @classmethod
     def create_client(cls, model_key: Optional[str] = None, config: Optional[ModelConfig] = None) -> BaseLLMClient:
@@ -43,10 +40,9 @@ class LLMFactory:
             'openai': OpenAIClient,
             'anthropic': AnthropicClient,
             'gemini': GeminiClient,
-            'google': GeminiClient,
             'ollama': OllamaClient,
-            'dashscope': DashScopeClient,
-            'qwen': DashScopeClient,
+            'dashscope': OpenAIClient,
+            'deepseek': OpenAIClient,
         }
         
         client_class = provider_map.get(config.provider)
@@ -56,16 +52,9 @@ class LLMFactory:
         return client_class(config)
     
     @classmethod
-    def get_or_create_client(cls, model_key: str) -> BaseLLMClient:
-        """获取或创建客户端（单例模式）"""
-        if model_key not in cls._clients:
-            cls._clients[model_key] = cls.create_client(model_key)
-        return cls._clients[model_key]
-    
-    @classmethod
     def list_supported_providers(cls) -> list:
         """列出支持的 provider"""
-        return ['openai', 'anthropic', 'gemini', 'ollama', 'dashscope', 'qwen']
+        return ['openai', 'anthropic', 'gemini', 'ollama', 'dashscope', 'deepseek']
     
     @classmethod
     def list_available_models(cls) -> dict:

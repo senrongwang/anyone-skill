@@ -32,12 +32,6 @@ class OpenAIClient(BaseLLMClient):
         
         self.client = OpenAI(**client_kwargs)
     
-    def validate_config(self) -> bool:
-        """验证配置"""
-        if not self.config.api_key:
-            return False
-        return True
-    
     def chat(self, messages: List[Message], **kwargs) -> LLMResponse:
         """发送对话请求"""
         # 转换消息格式
@@ -67,7 +61,6 @@ class OpenAIClient(BaseLLMClient):
                 'total_tokens': response.usage.total_tokens
             } if response.usage else None,
             finish_reason=response.choices[0].finish_reason,
-            raw_response=response
         )
     
     def chat_stream(self, messages: List[Message], **kwargs) -> Generator[str, None, None]:

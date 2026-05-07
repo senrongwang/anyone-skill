@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any, Generator
+from typing import Optional, List, Dict, Generator
 
 
 @dataclass
@@ -13,7 +13,6 @@ class LLMResponse:
     provider: str
     usage: Optional[Dict[str, int]] = None
     finish_reason: Optional[str] = None
-    raw_response: Optional[Any] = None
 
 
 @dataclass
@@ -21,7 +20,6 @@ class Message:
     """对话消息"""
     role: str  # system, user, assistant
     content: str
-    name: Optional[str] = None
 
 
 class BaseLLMClient(ABC):
@@ -57,10 +55,6 @@ class BaseLLMClient(ABC):
             生成的文本片段
         """
         pass
-    
-    def validate_config(self) -> bool:
-        """验证配置是否有效"""
-        return True
     
     def get_model_name(self) -> str:
         """获取模型名称"""
