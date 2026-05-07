@@ -1,4 +1,4 @@
-# 前任.skill 多 API 使用指南
+# Anyone Skill API 使用指南
 
 本项目已改造为支持多种 LLM API 的独立应用，不再依赖 Claude Code。
 
@@ -50,35 +50,35 @@ cp .env.example .env
 ### 3. 使用对话工具
 
 ```bash
-# 列出所有可用的前任 Skill
+# 列出所有可用的 Persona Skill
 python chat.py --list-skills
 
 # 列出所有可用的模型
 python chat.py --list-models
 
 # 使用 OpenAI GPT-4 对话
-python chat.py --ex 小明 --model openai/gpt-4
+python chat.py --persona 小明 --model openai/gpt-4
 
 # 使用 Claude 对话
-python chat.py --ex 初恋 --model anthropic/claude-3-opus
+python chat.py --persona 初恋 --model anthropic/claude-3-opus
 
 # 使用 Gemini 对话
-python chat.py --ex 前任 --model gemini/gemini-pro
+python chat.py --persona 前任 --model gemini/gemini-pro
 
 # 使用通义千问对话
-python chat.py --ex 前任 --model qwen/qwen-max
-python chat.py --ex 前任 --model qwen/qwen-plus
-python chat.py --ex 前任 --model qwen/qwen-turbo
+python chat.py --persona 前任 --model qwen/qwen-max
+python chat.py --persona 前任 --model qwen/qwen-plus
+python chat.py --persona 前任 --model qwen/qwen-turbo
 
 # 使用本地 Ollama 模型
-python chat.py --ex 前任 --model ollama/llama2
+python chat.py --persona 前任 --model ollama/llama2
 ```
 
 ## 命令行参数
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| `--ex`, `--slug` | 前任 Skill 代号 | 必填 |
+| `--persona`, `-p` | Persona Skill 代号 | 必填 |
 | `--model`, `-m` | 模型标识 | openai/gpt-4o |
 | `--list-skills`, `-l` | 列出所有 Skill | - |
 | `--list-models` | 列出所有模型 | - |
@@ -134,7 +134,7 @@ ollama pull qwen2.5
 ### 使用
 
 ```bash
-python chat.py --ex 前任 --model ollama/llama2
+python chat.py --persona 前任 --model ollama/llama2
 ```
 
 ## 故障排除
@@ -145,9 +145,9 @@ python chat.py --ex 前任 --model ollama/llama2
 pip install openai anthropic google-generativeai
 ```
 
-### 找不到前任 Skill
+### 找不到 Persona Skill
 
-确保你已经使用 `create-ex` 创建了 Skill，并且 Skill 文件位于 `exes/{slug}/` 目录下。
+确保你已经使用创建工具创建了 Skill，并且 Skill 文件位于 `personas/{slug}/` 目录下。
 
 ### API Key 无效
 
@@ -185,7 +185,7 @@ tools/
 | 功能 | Claude Code 版本 | 多 API 版本 |
 |------|-----------------|-------------|
 | 运行环境 | Claude Code | 独立 Python 应用 |
-| 触发方式 | `/create-ex`, `/{slug}` | `python chat.py --ex {slug}` |
+| 触发方式 | `/create-ex`, `/{slug}` | `python chat.py --persona {slug}` |
 | 支持模型 | Claude  only | OpenAI, Claude, Gemini, Ollama |
 | 数据解析 | ✅ 相同 | ✅ 相同 |
 | Skill 格式 | AgentSkills 标准 | 独立格式（兼容） |

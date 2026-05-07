@@ -21,8 +21,6 @@ from tools.config.settings import get_settings
 from tools.skill_writer import init_skill, combine_skill
 from tools.relationship_types import (
     select_relationship_type,
-    get_relationship_type,
-    RelationshipCategory,
     list_relationship_types
 )
 from tools.prompt_loader import load_prompt
@@ -67,7 +65,7 @@ def step2_basic_info(rel_type):
     print(f"Step 2: 基础信息录入 - {rel_type.display_name}")
     print("="*50)
     
-    questions = rel_type.get_intake_questions()
+    questions = rel_type.intake_questions
     info = {}
     
     for q in questions:
@@ -356,7 +354,7 @@ def step4_generate_content(info: dict, raw_content: str, rel_type):
         print("\n检测到原始材料，正在使用 AI 智能提取记忆...")
         try:
             # 加载对应关系类型的记忆分析器提示词
-            category_value = rel_type.category.value
+            category_value = rel_type.key
             analyzer_prompt = load_prompt(category_value, 'memory_analyzer')
             
             # 构建完整的分析请求
@@ -471,7 +469,7 @@ def step6_write_files(info: dict, memory_content: str, persona_content: str, sou
     meta = {
         "name": info['name'],
         "slug": slug,
-        "relationship_type": rel_type.category.value,
+        "relationship_type": rel_type.key,
         "created_at": now,
         "updated_at": now,
         "version": "v1",

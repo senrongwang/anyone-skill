@@ -357,18 +357,23 @@ python chat.py --persona 偶像 --model ollama/llama2
 anyone-skill-main/
 ├── chat.py                 # 对话入口（支持多 API）
 ├── create_persona.py       # Persona Skill 创建工具
-├── SKILL.md                # Skill 定义文档
+├── API_USAGE.md            # API 使用详细指南
 ├── prompts/                # Prompt 模板
-│   ├── intake.md           #   信息录入模板
-│   ├── memory_analyzer.md  #   记忆提取模板
-│   ├── persona_analyzer.md #   性格分析模板
-│   ├── memory_builder.md   #   memory.md 生成模板
-│   ├── persona_builder.md  #   persona.md 生成模板
-│   ├── merger.md           #   增量 merge 逻辑
-│   └── correction_handler.md # 对话纠正处理
+│   ├── memory_analyzer/    #   记忆分析器（每关系类型独立）
+│   │   ├── ex_partner.md
+│   │   ├── friend.md
+│   │   ├── family.md
+│   │   ├── colleague.md
+│   │   └── idol.md
+│   ├── persona_builder/    #   性格构建器（每关系类型独立）
+│   │   ├── ex_partner.md
+│   │   ├── friend.md
+│   │   ├── family.md
+│   │   ├── colleague.md
+│   │   └── idol.md
+│   ├── correction_handler.md # 对话纠正处理
+│   └── merger.md           #   增量 merge 逻辑
 ├── tools/                  # Python 工具
-│   ├── relationship_types.py # 关系类型定义
-│   ├── chat_engine.py      #   对话引擎
 │   ├── config/             #   配置管理
 │   │   ├── __init__.py
 │   │   └── settings.py     #     API 密钥、模型配置
@@ -381,15 +386,21 @@ anyone-skill-main/
 │   │   ├── dashscope_client.py
 │   │   ├── ollama_client.py
 │   │   └── factory.py      #     工厂模式
+│   ├── relationship_types.py # 关系类型定义
+│   ├── chat_engine.py      #   对话引擎
 │   ├── wechat_parser.py    #   微信聊天记录解析
-│   ├── qq_parser.py        #   QQ 聊天记录解析
-│   ├── social_parser.py    #   社交媒体解析
 │   ├── photo_analyzer.py   #   照片元信息分析
 │   ├── skill_writer.py     #   Skill 文件管理
-│   └── version_manager.py  #   版本管理
+│   └── prompt_loader.py    #   提示词模板加载器
+├── docs/                   # 文档
+│   ├── ARCHITECTURE.md     #   项目结构文档
+│   ├── IMPLEMENTATION.md   #   实现文档
+│   ├── FLOW_GUIDE.md       #   完整流程说明文档
+│   └── PROMPTS_USAGE.md    #   提示词使用说明
+├── archive/                # 归档代码
+│   └── README.md
 ├── personas/               # 生成的 Persona Skill（gitignored）
 ├── .env.example            # 环境变量配置示例
-├── API_USAGE.md            # API 使用详细指南
 ├── requirements.txt
 └── LICENSE
 ```
